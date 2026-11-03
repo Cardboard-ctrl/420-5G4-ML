@@ -13,10 +13,15 @@ RUN if [ "${REINSTALL_CMAKE_VERSION_FROM_SOURCE}" != "none" ]; then \
 # [Optional] Uncomment this section to install additional vcpkg ports.
 # RUN su vscode -c "${VCPKG_ROOT}/vcpkg install <your-port-name-here>"
 
+RUN sed -i 's|http://|https://|g' /etc/apt/sources.list.d/debian.sources
+
 # [Optional] Uncomment this section to install additional packages.
 RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
-    && apt-get -y install --no-install-recommends python3-pybind11 pybind11-dev python3-tk python3-venv \
-    zstd \
-    fonts-noto-color-emoji fonts-noto-core fonts-dejavu-core fonts-noto-extra
+   && apt-get -y install --no-install-recommends python3-pybind11 pybind11-dev python3-tk python3-venv \
+   zstd \
+   fonts-noto-color-emoji fonts-noto-core fonts-dejavu-core fonts-noto-extra
 
 # ajouter installation ollama et opencode
+RUN curl -fsSL https://ollama.com/install.sh | sh
+
+RUN curl -fsSL https://opencode.ai/v2/install | bash
