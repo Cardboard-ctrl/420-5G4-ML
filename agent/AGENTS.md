@@ -37,16 +37,21 @@ Data loads at startup. Menu 12 saves both files; menu 0 saves before exit. Menu 
 - Headers use include guards and put `using namespace std;` in headers, matching existing style.
 
 ## GUI (`gui/`)
-Minimal customtkinter smoke test. Use the GUI-specific venv, not the repo-root one. `gui/bibliotheque_api.py` provides the bridge facade (`Bibliotheque.open(data_dir)`, dict-returning methods); `app.py` itself is still standalone.
+CustomTkinter app with a shared header, bottom navigation, and three pages (`Livres`, `Utilisateurs`, `Paramètres`). Use the GUI-specific venv, not the repo-root one.
 ```bash
 cd gui
 python3 -m venv .venv
 .venv/bin/python -m pip install -r requirements.txt
-.venv/bin/python app.py
+.venv/bin/python app.py -d ../data
 ```
 - Requires an X11 display (this shell has `DISPLAY=:0`; the devcontainer mounts `/tmp/.X11-unix`).
-- `customtkinter` is pinned in `gui/requirements.txt`; `.venv/` is gitignored by the root `.gitignore`.
-- Manual check: window opens, theme button toggles light/dark, counter increments, Quit closes.
+- Entry point: `gui/app.py`; window/layout/navigation: `gui/ui/shell.py`, `gui/ui/nav_bar.py`; pages: `gui/ui/pages/`.
+- `gui/bibliotheque_api.py` is the bridge facade. `Bibliotheque` is created once by `BibliothequeApp`; pages render read-only dicts. Mutation controls are visible but disabled until the next milestone.
+- Default data dir is `agent/data`; override with `-d/--data-dir` or `BIBLIOTHEQUE_DATA_DIR`.
+- Theme tokens live in `gui/theme.py` (light/dark color tuples). Icons are SVG files in `gui/icons/`, mapped in `gui/ui/icons.py`; `resvg_py` rasterizes them and Pillow tints the alpha mask for light/dark/accent/disabled variants. Add new icons to `ICON_FILES`.
+- Dependencies (`customtkinter`, `Pillow`, `resvg_py`) are pinned in `gui/requirements.txt`; `.venv/` is gitignored by the root `.gitignore`.
+- Icon tests: `gui/.venv/bin/python -m unittest discover -s gui/tests`.
+- Manual check: nav switches pages and subtitle, active underline updates, theme toggle recolors widgets and icons, search/filter work, save/backup/stats work, window resizes cleanly.
 
 ## Devcontainer
 `.devcontainer/` is optional. It mounts X11 (`/tmp/.X11-unix`), uses host networking, and installs CMake, Ollama, and opencode.

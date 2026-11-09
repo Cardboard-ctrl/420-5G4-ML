@@ -33,3 +33,20 @@ $ python3 tests/test_bridge.py
 ```
 
 Le module est ecrit dans `build/`. La facade `gui/bibliotheque_api.py` fournit une API Python simple (`Bibliotheque.open(data_dir)`, methodes renvoyant des dictionnaires).
+
+# Interface graphique (CustomTkinter)
+
+L'application se trouve dans `gui/` et utilise un environnement virtuel dedie:
+
+```
+$ cd gui
+$ python3 -m venv .venv
+$ .venv/bin/python -m pip install -r requirements.txt
+$ .venv/bin/python app.py -d ../data
+```
+
+Les icones SVG sont dans `gui/icons/` et sont converties en images par `resvg_py`, puis teintees avec Pillow selon le theme clair/sombre. Les tests des icones se lancent avec:
+
+```
+$ .venv/bin/python -m unittest discover -s tests
+```
