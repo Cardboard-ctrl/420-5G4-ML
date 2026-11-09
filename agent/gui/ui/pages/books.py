@@ -5,6 +5,232 @@ from ui.pages.base import BasePage
 from ui.widgets import BookCard, EmptyState, IconTextButton, SearchBar
 
 
+class MessageDialog(ctk.CTkToplevel):
+    def __init__(self, master, title, message):
+        super().__init__(master, fg_color=theme.COLORS["window"])
+        self.title(title)
+        self.geometry("440x230")
+        self.resizable(False, False)
+        self.transient(master)
+        self.grab_set()
+
+        content = ctk.CTkFrame(
+            self,
+            fg_color=theme.COLORS["surface"],
+            corner_radius=theme.RADIUS["card"],
+        )
+        content.pack(fill="both", expand=True, padx=24, pady=24)
+
+        ctk.CTkLabel(
+            content,
+            text=title,
+            font=theme.font(18, "bold"),
+            text_color=theme.COLORS["text"],
+        ).pack(pady=(20, 10), padx=20)
+
+        ctk.CTkLabel(
+            content,
+            text=message,
+            font=theme.body_font(),
+            text_color=theme.COLORS["text"],
+            wraplength=350,
+            justify="left",
+        ).pack(pady=(0, 16), padx=20)
+
+        ctk.CTkButton(
+            content,
+            text="Fermer",
+            command=self.destroy,
+            width=120,
+            height=32,
+            corner_radius=theme.RADIUS["button"],
+            fg_color=theme.COLORS["button"],
+            hover_color=theme.COLORS["button_hover"],
+            text_color=theme.COLORS["text"],
+            font=theme.small_font(),
+        ).pack(pady=(0, 20))
+
+        self.bind("<Escape>", lambda _event: self.destroy())
+
+
+class ConfirmDialog(ctk.CTkToplevel):
+    def __init__(self, master, title, message, on_confirm):
+        super().__init__(master, fg_color=theme.COLORS["window"])
+        self.title(title)
+        self.geometry("440x250")
+        self.resizable(False, False)
+        self.transient(master)
+        self.grab_set()
+        self.on_confirm = on_confirm
+
+        content = ctk.CTkFrame(
+            self,
+            fg_color=theme.COLORS["surface"],
+            corner_radius=theme.RADIUS["card"],
+        )
+        content.pack(fill="both", expand=True, padx=24, pady=24)
+
+        ctk.CTkLabel(
+            content,
+            text=title,
+            font=theme.font(18, "bold"),
+            text_color=theme.COLORS["text"],
+        ).pack(pady=(20, 10), padx=20)
+
+        ctk.CTkLabel(
+            content,
+            text=message,
+            font=theme.body_font(),
+            text_color=theme.COLORS["text"],
+            wraplength=350,
+            justify="left",
+        ).pack(pady=(0, 16), padx=20)
+
+        buttons = ctk.CTkFrame(content, fg_color="transparent")
+        buttons.pack(pady=(0, 20))
+
+        ctk.CTkButton(
+            buttons,
+            text="Annuler",
+            command=self.destroy,
+            width=120,
+            height=32,
+            corner_radius=theme.RADIUS["button"],
+            fg_color=theme.COLORS["button"],
+            hover_color=theme.COLORS["button_hover"],
+            text_color=theme.COLORS["text"],
+            font=theme.small_font(),
+        ).pack(side="left", padx=(0, 10))
+
+        ctk.CTkButton(
+            buttons,
+            text="Supprimer",
+            command=self.confirm,
+            width=120,
+            height=32,
+            corner_radius=theme.RADIUS["button"],
+            fg_color=theme.COLORS["danger"],
+            hover_color=theme.COLORS["button_hover"],
+            text_color="#FFFFFF",
+            font=theme.small_font(),
+        ).pack(side="left")
+
+        self.bind("<Escape>", lambda _event: self.destroy())
+
+    def confirm(self):
+        self.destroy()
+        self.on_confirm()
+
+
+class AddBookDialog(ctk.CTkToplevel):
+    def __init__(self, master, on_submit):
+        super().__init__(master, fg_color=theme.COLORS["window"])
+        self.title("Ajouter un livre")
+        self.geometry("450x400")
+        self.resizable(False, False)
+        self.transient(master)
+        self.grab_set()
+        self.on_submit = on_submit
+
+        content = ctk.CTkFrame(
+            self,
+            fg_color=theme.COLORS["surface"],
+            corner_radius=theme.RADIUS["card"],
+        )
+        content.pack(fill="both", expand=True, padx=24, pady=24)
+        content.grid_columnconfigure(1, weight=1)
+
+        ctk.CTkLabel(
+            content,
+            text="Ajouter un livre",
+            font=theme.font(18, "bold"),
+            text_color=theme.COLORS["text"],
+        ).grid(row=0, column=0, columnspan=2, pady=(20, 14), padx=20)
+
+        self.title_entry = self._field(content, 1, "Titre")
+        self.author_entry = self._field(content, 2, "Auteur")
+        self.isbn_entry = self._field(content, 3, "ISBN")
+
+        self.error = ctk.CTkLabel(
+            content,
+            text="",
+            font=theme.small_font(),
+            text_color=theme.COLORS["danger"],
+            wraplength=360,
+            justify="left",
+        )
+        self.error.grid(row=4, column=0, columnspan=2, sticky="w", padx=24, pady=(8, 0))
+
+        buttons = ctk.CTkFrame(content, fg_color="transparent")
+        buttons.grid(row=5, column=0, columnspan=2, pady=(18, 20))
+
+        ctk.CTkButton(
+            buttons,
+            text="Annuler",
+            command=self.destroy,
+            width=120,
+            height=32,
+            corner_radius=theme.RADIUS["button"],
+            fg_color=theme.COLORS["button"],
+            hover_color=theme.COLORS["button_hover"],
+            text_color=theme.COLORS["text"],
+            font=theme.small_font(),
+        ).pack(side="left", padx=(0, 10))
+
+        ctk.CTkButton(
+            buttons,
+            text="Ajouter",
+            command=self.submit,
+            width=120,
+            height=32,
+            corner_radius=theme.RADIUS["button"],
+            fg_color=theme.COLORS["accent"],
+            hover_color=theme.COLORS["button_hover"],
+            text_color=("#FFFFFF", "#101828"),
+            font=theme.small_font(),
+        ).pack(side="left")
+
+        self.bind("<Return>", lambda _event: self.submit())
+        self.title_entry.focus_set()
+
+    def _field(self, master, row, label):
+        ctk.CTkLabel(
+            master,
+            text=label,
+            font=theme.body_font(),
+            text_color=theme.COLORS["text"],
+            anchor="w",
+        ).grid(row=row, column=0, sticky="w", padx=(24, 12), pady=6)
+        entry = ctk.CTkEntry(
+            master,
+            height=34,
+            corner_radius=theme.RADIUS["button"],
+            border_width=0,
+            fg_color=theme.COLORS["surface_alt"],
+            text_color=theme.COLORS["text"],
+            font=theme.body_font(),
+        )
+        entry.grid(row=row, column=1, sticky="ew", padx=(0, 24), pady=6)
+        return entry
+
+    def submit(self):
+        title = self.title_entry.get().strip()
+        author = self.author_entry.get().strip()
+        isbn = self.isbn_entry.get().strip()
+        if not title or not author or not isbn:
+            self.error.configure(
+                text="Le titre, l'auteur et l'ISBN sont obligatoires."
+            )
+            return
+
+        error = self.on_submit(title, author, isbn)
+        if error:
+            self.error.configure(text=error)
+            return
+
+        self.destroy()
+
+
 class BooksPage(BasePage):
     page_key = "books"
     page_title = "Livres"
@@ -15,7 +241,7 @@ class BooksPage(BasePage):
         self._search_by_author = False
 
         self.grid_columnconfigure(0, weight=1)
-        self.grid_rowconfigure(1, weight=1)
+        self.grid_rowconfigure(2, weight=1)
 
         toolbar = ctk.CTkFrame(self, fg_color="transparent")
         toolbar.grid(row=0, column=0, sticky="ew", pady=(0, 16))
@@ -49,10 +275,18 @@ class BooksPage(BasePage):
             toolbar,
             "add_book",
             "Ajouter un livre",
-            disabled=True,
+            command=self.open_add_dialog,
             width=160,
         )
         self.add_button.grid(row=0, column=4, padx=(12, 0))
+
+        self.feedback = ctk.CTkLabel(
+            self,
+            text="",
+            font=theme.body_font(),
+            text_color=theme.COLORS["muted"],
+        )
+        self.feedback.grid(row=1, column=0, sticky="w", pady=(0, 8))
 
         self.scroll = ctk.CTkScrollableFrame(
             self,
@@ -61,7 +295,7 @@ class BooksPage(BasePage):
             scrollbar_button_color=theme.COLORS["button"],
             scrollbar_button_hover_color=theme.COLORS["button_hover"],
         )
-        self.scroll.grid(row=1, column=0, sticky="nsew")
+        self.scroll.grid(row=2, column=0, sticky="nsew")
         self.scroll.grid_columnconfigure(0, weight=1)
 
         self._update_filter_buttons()
@@ -111,6 +345,71 @@ class BooksPage(BasePage):
             self.author_button.configure(text="Par Auteur")
         self.refresh()
 
+    def _set_feedback(self, text, error=False):
+        self.feedback.configure(
+            text=text,
+            text_color=theme.COLORS["danger"] if error else theme.COLORS["muted"],
+        )
+
+    def open_add_dialog(self):
+        if self.library is None:
+            self._set_feedback("Bibliothèque indisponible.", error=True)
+            return
+        AddBookDialog(self.app, self.add_book)
+
+    def add_book(self, title, author, isbn):
+        try:
+            added = self.library.add_book(title, author, isbn)
+        except Exception as exc:
+            return f"Erreur : {exc}"
+
+        if not added:
+            return "Un livre avec cet ISBN existe déjà."
+
+        self._set_feedback("Livre ajouté. La sauvegarde se fera à la fermeture.")
+        self.refresh()
+        return None
+
+    def confirm_delete(self, book):
+        if not book["available"]:
+            MessageDialog(
+                self.app,
+                "Suppression impossible",
+                (
+                    f"Le livre « {book['title']} » est emprunté par "
+                    f"{book['borrower_id']}. Retournez-le avant de le supprimer."
+                ),
+            )
+            return
+
+        ConfirmDialog(
+            self.app,
+            "Supprimer le livre",
+            (
+                f"Voulez-vous vraiment supprimer « {book['title']} » "
+                f"(ISBN {book['isbn']}) ?"
+            ),
+            lambda: self.remove_book(book),
+        )
+
+    def remove_book(self, book):
+        try:
+            removed = self.library.remove_book(book["isbn"])
+        except Exception as exc:
+            self._set_feedback(f"Erreur : {exc}", error=True)
+            return
+
+        if not removed:
+            self._set_feedback(
+                "Suppression impossible : livre introuvable ou emprunté.",
+                error=True,
+            )
+            self.refresh()
+            return
+
+        self._set_feedback("Livre supprimé. La sauvegarde se fera à la fermeture.")
+        self.refresh()
+
     def refresh(self):
         for child in self.scroll.winfo_children():
             child.destroy()
@@ -143,4 +442,8 @@ class BooksPage(BasePage):
             return
 
         for book in books:
-            BookCard(self.scroll, book).pack(fill="x", pady=6)
+            BookCard(
+                self.scroll,
+                book,
+                on_delete=lambda b=book: self.confirm_delete(b),
+            ).pack(fill="x", pady=6)

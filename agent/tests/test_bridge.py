@@ -65,6 +65,21 @@ class BridgeTest(unittest.TestCase):
         self.assertIsNotNone(reloaded.get_user("USR-TEST"))
         self.assertEqual(len(reloaded.list_books()), self.expected_books + 1)
 
+    def test_remove_book(self):
+        available = next(
+            book for book in self.biblio.list_books() if book["available"]
+        )
+        self.assertTrue(self.biblio.remove_book(available["isbn"]))
+        self.assertIsNone(self.biblio.get_book(available["isbn"]))
+        self.assertFalse(self.biblio.remove_book(available["isbn"]))
+
+        borrowed = next(
+            book for book in self.biblio.list_books() if not book["available"]
+        )
+        self.assertFalse(self.biblio.remove_book(borrowed["isbn"]))
+        self.assertTrue(self.biblio.return_book(borrowed["isbn"]))
+        self.assertTrue(self.biblio.remove_book(borrowed["isbn"]))
+
     def test_search(self):
         first = self.biblio.list_books()[0]
         self.assertTrue(self.biblio.search_by_title(first["title"].lower()))

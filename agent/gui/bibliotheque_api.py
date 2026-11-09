@@ -95,6 +95,9 @@ class Bibliotheque:
 
     def remove_book(self, isbn):
         self._require_open()
+        book = self._library.findBookByISBN(isbn)
+        if book is None or not book.getAvailability():
+            return False
         return bool(self._library.removeBook(isbn))
 
     def search_by_title(self, title):

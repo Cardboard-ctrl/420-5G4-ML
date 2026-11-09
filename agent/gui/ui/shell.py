@@ -4,7 +4,7 @@ import customtkinter as ctk
 
 import theme
 from ui.nav_bar import NavBar
-from ui.pages.books import BooksPage
+from ui.pages.books import BooksPage, MessageDialog
 from ui.pages.settings import SettingsPage
 from ui.pages.users import UsersPage
 
@@ -102,4 +102,21 @@ class BibliothequeApp(ctk.CTk):
         self.current_page = key
 
     def on_close(self):
+        if self.library is not None:
+            try:
+                saved = self.library.save()
+            except Exception as exc:
+                MessageDialog(
+                    self,
+                    "Sauvegarde impossible",
+                    f"Les données n'ont pas pu être sauvegardées : {exc}",
+                )
+                return
+            if not saved:
+                MessageDialog(
+                    self,
+                    "Sauvegarde impossible",
+                    "Les données n'ont pas pu être sauvegardées. Fermeture annulée.",
+                )
+                return
         self.destroy()
