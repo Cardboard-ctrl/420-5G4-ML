@@ -180,7 +180,7 @@ class BookCard(TableCard):
 
 
 class UserCard(TableCard):
-    def __init__(self, master, user, on_delete=None):
+    def __init__(self, master, user):
         borrowed = user["borrowed_books"]
         isbns = ", ".join(borrowed) if borrowed else "N/A"
         super().__init__(
@@ -191,16 +191,9 @@ class UserCard(TableCard):
                 ("Livres empruntés", str(len(borrowed))),
                 ("ISBNs", isbns),
             ),
+            with_actions=False,
         )
         self.user = user
-
-        IconButton(
-            self.action_rail,
-            "trash",
-            command=on_delete,
-            size=18,
-            disabled=on_delete is None,
-        ).pack(anchor="e", padx=(0, ACTION_PAD_RIGHT), pady=(10, 0))
 
 
 class EmptyState(ctk.CTkLabel):

@@ -15,10 +15,11 @@ CELL_PAD_X = 12
 ACTION_PAD_RIGHT = 18
 
 
-def configure_columns(frame):
+def configure_columns(frame, with_actions=True):
     for index, (_, minsize, weight) in enumerate(COLUMN_SPECS):
         frame.grid_columnconfigure(index, minsize=minsize, weight=weight)
-    frame.grid_columnconfigure(len(COLUMN_SPECS), minsize=ACTION_WIDTH, weight=0)
+    action_width = ACTION_WIDTH if with_actions else 0
+    frame.grid_columnconfigure(len(COLUMN_SPECS), minsize=action_width, weight=0)
 
 
 class DataCell(ctk.CTkFrame):
@@ -56,7 +57,7 @@ class DataCell(ctk.CTkFrame):
 
 
 class TableCard(ctk.CTkFrame):
-    def __init__(self, master, values):
+    def __init__(self, master, values, with_actions=True):
         if len(values) != len(COLUMN_SPECS):
             raise ValueError("TableCard expects one value per column")
         super().__init__(
@@ -68,7 +69,7 @@ class TableCard(ctk.CTkFrame):
         )
         self.grid_propagate(False)
         self.grid_rowconfigure(0, weight=1)
-        configure_columns(self)
+        configure_columns(self, with_actions)
 
         self.cells = []
         for index, (header, value) in enumerate(values):
@@ -77,15 +78,17 @@ class TableCard(ctk.CTkFrame):
             cell.grid(row=0, column=index, sticky="nsew")
             self.cells.append(cell)
 
-        self.action_rail = ctk.CTkFrame(
-            self,
-            fg_color="transparent",
-            width=1,
-            height=1,
-        )
-        self.action_rail.pack_propagate(False)
-        self.action_rail.grid(
-            row=0,
-            column=len(values),
-            sticky="nsew",
-        )
+        self.action_rail = None
+        if with_actions:
+            self.action_rail = ctk.CTkFrame(
+                self,
+                fg_color="transparent",
+                width=1,
+                height=1,
+            )
+            self.action_rail.pack_propagate(False)
+            self.action_rail.grid(
+                row=0,
+                column=len(values),
+                sticky="nsew",
+            )
