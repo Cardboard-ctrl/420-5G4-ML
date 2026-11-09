@@ -1,6 +1,6 @@
 # AGENTS.md
 
-Scope: only the `agent/` C++ project. The Python notebooks elsewhere in the repo are out of scope.
+Scope: only the `agent/` project (C++ app + optional Python GUI). The Python notebooks elsewhere in the repo are out of scope.
 `agent/README.md` has the minimal build steps; this file records the non-obvious details.
 
 ## Build and run
@@ -26,6 +26,18 @@ Data loads at startup. Menu 12 saves both files; menu 0 saves before exit. Menu 
 - `Library` owns books/users with `unique_ptr`. Methods returning `Book*`/`User*` are non-owning; do not delete them.
 - `Book`/`User` own their `toFileFormat`/`fromFileFormat` logic; `FileManager` reads/writes whole collections.
 - Headers use include guards and put `using namespace std;` in headers, matching existing style.
+
+## GUI (`gui/`)
+Minimal customtkinter smoke test; it does not read `data/` or call the C++ app. Use the GUI-specific venv, not the repo-root one.
+```bash
+cd gui
+python3 -m venv .venv
+.venv/bin/python -m pip install -r requirements.txt
+.venv/bin/python app.py
+```
+- Requires an X11 display (this shell has `DISPLAY=:0`; the devcontainer mounts `/tmp/.X11-unix`).
+- `customtkinter` is pinned in `gui/requirements.txt`; `.venv/` is gitignored by the root `.gitignore`.
+- Manual check: window opens, theme button toggles light/dark, counter increments, Quit closes.
 
 ## Devcontainer
 `.devcontainer/` is optional. It mounts X11 (`/tmp/.X11-unix`), uses host networking, and installs CMake, Ollama, and opencode.
