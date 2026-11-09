@@ -65,6 +65,36 @@ class BridgeTest(unittest.TestCase):
         self.assertIsNotNone(reloaded.get_user("USR-TEST"))
         self.assertEqual(len(reloaded.list_books()), self.expected_books + 1)
 
+    def test_checkout_guards(self):
+        available = next(
+            book for book in self.biblio.list_books() if book["available"]
+        )
+        user = self.biblio.list_users()[0]
+
+        self.assertFalse(self.biblio.checkout("9780000000009", user["user_id"]))
+        self.assertFalse(self.biblio.checkout(available["isbn"], "USR-UNKNOWN"))
+        self.assertTrue(self.biblio.checkout(available["isbn"], user["user_id"]))
+        self.assertFalse(self.biblio.checkout(available["isbn"], user["user_id"]))
+
+        book = self.biblio.get_book(available["isbn"])
+        self.assertFalse(book["available"])
+        self.assertEqual(book["borrower_id"], user["user_id"])
+        self.assertIn(
+            available["isbn"],
+            self.biblio.get_user(user["user_id"])["borrowed_books"],
+        )
+
+        self.assertTrue(self.biblio.return_book(available["isbn"]))
+        self.assertFalse(self.biblio.return_book(available["isbn"]))
+
+        book = self.biblio.get_book(available["isbn"])
+        self.assertTrue(book["available"])
+        self.assertEqual(book["borrower_id"], "")
+        self.assertNotIn(
+            available["isbn"],
+            self.biblio.get_user(user["user_id"])["borrowed_books"],
+        )
+
     def test_remove_book(self):
         available = next(
             book for book in self.biblio.list_books() if book["available"]

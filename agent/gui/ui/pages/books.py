@@ -231,6 +231,123 @@ class AddBookDialog(ctk.CTkToplevel):
         self.destroy()
 
 
+class BorrowDialog(ctk.CTkToplevel):
+    def __init__(self, master, book, users, on_submit):
+        super().__init__(master, fg_color=theme.COLORS["window"])
+        self.title("Emprunter un livre")
+        self.geometry("450x330")
+        self.resizable(False, False)
+        self.transient(master)
+        self.grab_set()
+        self.on_submit = on_submit
+        self.display_to_id = {
+            f"{user['name']} ({user['user_id']})": user["user_id"] for user in users
+        }
+
+        content = ctk.CTkFrame(
+            self,
+            fg_color=theme.COLORS["surface"],
+            corner_radius=theme.RADIUS["card"],
+        )
+        content.pack(fill="both", expand=True, padx=24, pady=24)
+        content.grid_columnconfigure(0, weight=1)
+
+        ctk.CTkLabel(
+            content,
+            text="Emprunter un livre",
+            font=theme.font(18, "bold"),
+            text_color=theme.COLORS["text"],
+        ).grid(row=0, column=0, pady=(20, 6), padx=20)
+
+        ctk.CTkLabel(
+            content,
+            text=f"« {book['title']} » — ISBN {book['isbn']}",
+            font=theme.body_font(),
+            text_color=theme.COLORS["muted"],
+            wraplength=360,
+            justify="center",
+        ).grid(row=1, column=0, pady=(0, 16), padx=20)
+
+        ctk.CTkLabel(
+            content,
+            text="Utilisateur",
+            font=theme.body_font(),
+            text_color=theme.COLORS["text"],
+            anchor="w",
+        ).grid(row=2, column=0, sticky="w", padx=24, pady=(0, 6))
+
+        self.user_menu = ctk.CTkOptionMenu(
+            content,
+            values=list(self.display_to_id),
+            height=34,
+            corner_radius=theme.RADIUS["button"],
+            fg_color=theme.COLORS["surface_alt"],
+            button_color=theme.COLORS["button"],
+            button_hover_color=theme.COLORS["button_hover"],
+            text_color=theme.COLORS["text"],
+            font=theme.body_font(),
+            dropdown_font=theme.body_font(),
+            dropdown_fg_color=theme.COLORS["surface_alt"],
+            dropdown_hover_color=theme.COLORS["button"],
+            dropdown_text_color=theme.COLORS["text"],
+        )
+        self.user_menu.grid(row=3, column=0, sticky="ew", padx=24)
+
+        self.error = ctk.CTkLabel(
+            content,
+            text="",
+            font=theme.small_font(),
+            text_color=theme.COLORS["danger"],
+            wraplength=360,
+            justify="left",
+        )
+        self.error.grid(row=4, column=0, sticky="w", padx=24, pady=(8, 0))
+
+        buttons = ctk.CTkFrame(content, fg_color="transparent")
+        buttons.grid(row=5, column=0, pady=(18, 20))
+
+        ctk.CTkButton(
+            buttons,
+            text="Annuler",
+            command=self.destroy,
+            width=120,
+            height=32,
+            corner_radius=theme.RADIUS["button"],
+            fg_color=theme.COLORS["button"],
+            hover_color=theme.COLORS["button_hover"],
+            text_color=theme.COLORS["text"],
+            font=theme.small_font(),
+        ).pack(side="left", padx=(0, 10))
+
+        ctk.CTkButton(
+            buttons,
+            text="Emprunter",
+            command=self.submit,
+            width=120,
+            height=32,
+            corner_radius=theme.RADIUS["button"],
+            fg_color=theme.COLORS["accent"],
+            hover_color=theme.COLORS["button_hover"],
+            text_color=("#FFFFFF", "#101828"),
+            font=theme.small_font(),
+        ).pack(side="left")
+
+        self.bind("<Escape>", lambda _event: self.destroy())
+
+    def submit(self):
+        user_id = self.display_to_id.get(self.user_menu.get())
+        if not user_id:
+            self.error.configure(text="Sélectionnez un utilisateur.")
+            return
+
+        error = self.on_submit(user_id)
+        if error:
+            self.error.configure(text=error)
+            return
+
+        self.destroy()
+
+
 class BooksPage(BasePage):
     page_key = "books"
     page_title = "Livres"
@@ -410,6 +527,75 @@ class BooksPage(BasePage):
         self._set_feedback("Livre supprimé. La sauvegarde se fera à la fermeture.")
         self.refresh()
 
+    def handle_action(self, book):
+        if book["available"]:
+            self.open_borrow_dialog(book)
+        else:
+            self.return_book(book)
+
+    def open_borrow_dialog(self, book):
+        if self.library is None:
+            self._set_feedback("Bibliothèque indisponible.", error=True)
+            return
+
+        try:
+            users = self.library.list_users()
+        except Exception as exc:
+            self._set_feedback(f"Erreur de chargement : {exc}", error=True)
+            return
+
+        if not users:
+            MessageDialog(
+                self.app,
+                "Aucun utilisateur",
+                "Ajoutez d'abord un utilisateur avant d'emprunter un livre.",
+            )
+            return
+
+        BorrowDialog(
+            self.app,
+            book,
+            users,
+            lambda user_id: self.borrow_book(book, user_id),
+        )
+
+    def borrow_book(self, book, user_id):
+        try:
+            borrowed = self.library.checkout(book["isbn"], user_id)
+        except Exception as exc:
+            return f"Erreur : {exc}"
+
+        if not borrowed:
+            self.refresh()
+            return (
+                "Emprunt impossible : livre ou utilisateur introuvable, "
+                "ou livre déjà emprunté."
+            )
+
+        self._set_feedback(
+            f"Livre emprunté par {user_id}. La sauvegarde se fera à la fermeture."
+        )
+        self.refresh()
+        return None
+
+    def return_book(self, book):
+        try:
+            returned = self.library.return_book(book["isbn"])
+        except Exception as exc:
+            self._set_feedback(f"Erreur : {exc}", error=True)
+            return
+
+        if not returned:
+            self._set_feedback(
+                "Retour impossible : livre introuvable ou déjà disponible.",
+                error=True,
+            )
+            self.refresh()
+            return
+
+        self._set_feedback("Livre retourné. La sauvegarde se fera à la fermeture.")
+        self.refresh()
+
     def refresh(self):
         for child in self.scroll.winfo_children():
             child.destroy()
@@ -446,4 +632,5 @@ class BooksPage(BasePage):
                 self.scroll,
                 book,
                 on_delete=lambda b=book: self.confirm_delete(b),
+                on_action=lambda b=book: self.handle_action(b),
             ).pack(fill="x", pady=6)
