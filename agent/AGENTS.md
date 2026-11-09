@@ -9,11 +9,20 @@ From this directory:
 cmake -S . -B build && cmake --build build
 ./build/bibliotheque -d data
 ```
-- Executable is `bibliotheque` (`add_executable(${PROJECT_NAME} ...)`).
+- Targets: `biblio_core` (static lib: book/user/library/filemanager), `bibliotheque` (CLI, `main.cpp`), optional `bibliotheque_py` (pybind11 module).
 - `-d/--data-dir` is effectively required. Without it the data-file paths stay empty: nothing loads and saves fail. Use `-d data` for the sample files here.
 - `build/` contents are gitignored (`.gitignore` has `build/*`).
-- `CMakeLists.txt` uses `file(GLOB "*.cpp")` without `CONFIGURE_DEPENDS`: re-run cmake after adding or removing a `.cpp` file.
-- C++17, warnings `-Wall -Wextra -Wpedantic`. No tests, lint, formatter, or CI.
+- Sources are listed explicitly (no `file(GLOB)`): add new `.cpp` files to the matching target in `CMakeLists.txt`.
+- C++17, warnings `-Wall -Wextra -Wpedantic`. No lint, formatter, or CI. Bridge tests: `python3 tests/test_bridge.py`.
+- `biblio_core` must stay `POSITION_INDEPENDENT_CODE ON`; otherwise the pybind module fails to link (`recompile with -fPIC`).
+
+## Python bridge (pybind11)
+- Module is `bibliotheque_py`, built to `build/`; import with `PYTHONPATH=build` or via `gui/bibliotheque_api.py`.
+- Build on/off: `cmake -S . -B build -DBUILD_PYTHON_BINDINGS=ON|OFF`.
+- Bindings live in `bindings/bindings.cpp` (not in `biblio_core`). `display*` methods are intentionally not exposed.
+- Raw `Book*`/`User*` returns MUST use `py::return_value_policy::reference_internal`: `Library` owns them via `unique_ptr`, and pybind's default `take_ownership` double-frees.
+- The extension ABI is tied to the Python found by CMake (currently `/usr/bin/python3` 3.13). For `gui/.venv`, configure with `-DPYTHON_EXECUTABLE=gui/.venv/bin/python` (this Debian pybind11 uses the uppercase legacy variable, not `Python_EXECUTABLE`).
+- `gui/bibliotheque_api.py` is the stable Python facade; it converts C++ objects to plain dicts so GUI code does not depend on C++ lifetimes.
 
 ## Data files
 `data/books.txt` and `data/users.txt` are pipe-separated; avoid `|` inside fields.
@@ -28,7 +37,7 @@ Data loads at startup. Menu 12 saves both files; menu 0 saves before exit. Menu 
 - Headers use include guards and put `using namespace std;` in headers, matching existing style.
 
 ## GUI (`gui/`)
-Minimal customtkinter smoke test; it does not read `data/` or call the C++ app. Use the GUI-specific venv, not the repo-root one.
+Minimal customtkinter smoke test. Use the GUI-specific venv, not the repo-root one. `gui/bibliotheque_api.py` provides the bridge facade (`Bibliotheque.open(data_dir)`, dict-returning methods); `app.py` itself is still standalone.
 ```bash
 cd gui
 python3 -m venv .venv
